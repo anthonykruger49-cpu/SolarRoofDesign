@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar Roof Layout</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
+    #map { height: 75vh; width: 100%; }
+    #controls { padding: 15px; background: #f4f4f4; height: 25vh; box-sizing: border-box; }
+    input, button { padding: 8px; margin: 4px 0; width: 100%; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+
+  <div id="controls">
+    <input type="text" id="address" placeholder="Enter address or coordinates (Lat, Lng)..." />
+    <button onclick="searchLocation()">Locate House</button>
+    <div id="stats">
+      <p><b>Panels Placed:</b> <span id="panel-count">0</span> | <b>Estimated System Size:</b> <span id="system-kwp">0</span> kWp</p>
+    </div>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    // Initialize Satellite Map (Esri World Imagery)
+    const map = L.map('map').setView([-26.1, 28.2], 18);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Esri Satellite'
+    }).addTo(map);
+
+    let panelCount = 0;
+
+    // Address Search via Nominatim
+    async function searchLocation() {
+      const query = document.getElementById('address').value;
+      if (!query) return;
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        map.setView([lat, lon], 19);
+      } else {
+        alert("Location not found");
+      }
+    }
+
+    // Tap on map roof to place 400W Solar Panels
+    map.on('click', function(e) {
+      const latLng = e.latlng;
+      
+      // Draw standard solar panel rectangle (~1.7m x 1.0m scale in lat/lng bounds)
+      const bounds = [
+        [latLng.lat - 0.000008, latLng.lng - 0.000005],
+        [latLng.lat + 0.000008, latLng.lng + 0.000005]
+      ];
+      
+      L.rectangle(bounds, {color: "#00eeff", weight: 1, fillColor: "#0044ff", fillOpacity: 0.7}).addTo(map);
+      
+      panelCount++;
+      document.getElementById('panel-count').innerText = panelCount;
+      document.getElementById('system-kwp').innerText = (panelCount * 0.4).toFixed(2); // 400W panels
+    });
+  </script>
+</body>
+</html>
