@@ -6,16 +6,29 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies & Sync Capacitor
+        run: |
+          npm ci || npm install
+          npx cap sync android
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
       - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
